@@ -1,11 +1,16 @@
 # Default values for agent-sandbox controller
-enableExtensions: true
+images:
+  agent-sandbox: image-repository:image-tag
 
 controller:
-  image:
-    repository: registry.k8s.io/agent-sandbox/agent-sandbox-controller
-    tag: v0.1.1
-    pullPolicy: IfNotPresent
+  pullPolicy: IfNotPresent
   replicas: 1
 
-namespace: agent-sandbox-system
+service:
+  ports:
+    metrics:
+      port: 8080
+      targetPort: 8080
+    webhookServer:
+      port: 9443
+      targetPort: 9443

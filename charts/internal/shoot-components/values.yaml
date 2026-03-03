@@ -1,0 +1,3 @@
+# Default values for agent-sandbox controller
+enableExtensions: true
+namespace: agent-sandbox-system

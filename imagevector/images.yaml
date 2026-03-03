@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+images:
+  - name: agent-sandbox
+    sourceRepository: https://github.com/kubernetes-sigs/agent-sandbox
+    repository: registry.k8s.io/agent-sandbox/agent-sandbox-controller
+    tag: "v0.1.1"
+    labels:
+      - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
+        value:
+          network_exposure: protected
+          authentication_enforced: false
+          user_interaction: gardener-operator
+          confidentiality_requirement: high
+          integrity_requirement: high
+          availability_requirement: low
+        signing: false

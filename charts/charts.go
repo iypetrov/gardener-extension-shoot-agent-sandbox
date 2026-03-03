@@ -18,5 +18,9 @@ const (
 	ChartsPath = "internal"
 
 	// AgentSandboxChartPath is the path to the agent-sandbox chart
-	AgentSandboxChartPath = "agent-sandbox"
+	AgentSandboxChartPath    = "agent-sandbox"
+	ShootComponentsChartPath = "shoot-components"
 )
+
+// InternalChartsPath is the path to the internal charts
+const InternalChartsPath = "internal"
