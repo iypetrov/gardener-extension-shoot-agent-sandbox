@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+image:
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-agent-sandbox
+  tag: latest
+  pullPolicy: IfNotPresent
+#  pullSecrets:
+#  - imagepullsecret-reference
+
+serviceName: shoot-agent-sandbox
+replicaCount: 1
+
+controllers:
+  lifecycle:
+    concurrentSyncs: 5
+  healthcheck:
+    concurrentSyncs: 5
+  heartbeat:
+    renewIntervalSeconds: 30
+  ignoreOperationAnnotation: false
+
+ignoreResources: false
+
+resources: {}
+vpa:
+  enabled: true
+  resourcePolicy:
+    minAllowed:
+      memory: 64Mi
+  updatePolicy:
+    updateMode: "Recreate"
+
+gardener:
+  version: ""
+
+## settings for metrics, e.g. scraping by seed-prometheus
+##
+metrics:
+  ## enable metrics scraping
+  ##
+  enableScraping: true
+  port: 8080
+
+webhookConfig:
+  servicePort: 443
+  serverPort: 10250

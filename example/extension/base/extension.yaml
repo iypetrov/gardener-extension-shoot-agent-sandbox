@@ -1,0 +1,13 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: extension-shoot-agent-sandbox
+spec:
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/shoot-agent-sandbox:v0.01.1-dev
+  resources:
+  - kind: Extension
+    type: shoot-agent-sandbox

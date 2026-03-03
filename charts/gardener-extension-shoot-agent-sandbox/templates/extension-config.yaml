@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extension-shoot-agent-sandbox.config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: |
+    apiVersion: shoot-agent-sandbox.extensions.config.gardener.cloud/v1alpha1
+    kind: Configuration
+{{- if .Values.agentSandbox }}
+    agentSandbox:
+  {{- range $k, $v := .Values.agentSandbox }}
+      {{ $k }}:
+{{ toYaml $v | trim | indent 8 }}
+  {{- end}}
+{{- end}}

@@ -1,0 +1,11 @@
+# Default values for agent-sandbox controller
+enableExtensions: true
+
+controller:
+  image:
+    repository: registry.k8s.io/agent-sandbox/agent-sandbox-controller
+    tag: v0.1.1
+    pullPolicy: IfNotPresent
+  replicas: 1
+
+namespace: agent-sandbox-system

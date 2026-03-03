@@ -1,0 +1,11 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  gardener-extension-shoot-agent-sandbox-reviewers:
+  - MrBatschner
+  - Vincinator
+  - Roncossek
+  gardener-extension-shoot-agent-sandbox-approvers:
+  - MrBatschner
+  - Vincinator
+  - Roncossek
