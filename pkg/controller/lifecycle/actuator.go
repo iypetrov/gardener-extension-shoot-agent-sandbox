@@ -17,6 +17,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/chartrenderer"
 	"github.com/gardener/gardener/pkg/extensions"
+	"github.com/gardener/gardener/pkg/utils/chart"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/charts"
+	"github.com/gardener/gardener-extension-shoot-agent-sandbox/imagevector"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/config"
 	api "github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/constants"
@@ -106,7 +108,19 @@ func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Ex
 }
 
 func (a *actuator) getShootResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
-	renderedChart, err := RenderAgentSandboxChart(cluster, config)
+	values := map[string]any{}
+
+	// Merge extension config values if present
+	if config.Extensions != nil {
+		values["enableExtensions"] = config.Extensions.Enable
+	}
+
+	values, err := chart.InjectImages(values, imagevector.ImageVector(), []string{imagevector.ImageNameAgentSandbox})
+	if err != nil {
+		return nil, fmt.Errorf("could not inject images: %w", err)
+	}
+
+	renderedChart, err := RenderAgentSandboxChart(cluster, values)
 	if err != nil {
 		return nil, err
 	}
