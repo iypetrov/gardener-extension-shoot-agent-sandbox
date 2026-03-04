@@ -27,7 +27,6 @@ import (
 
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/charts"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/config"
-	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
 	api "github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/constants"
 )
@@ -70,7 +69,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 	return a.reconcile(ctx, cluster, namespace, config)
 }
 
-func (a *actuator) reconcile(ctx context.Context, cluster *extensions.Cluster, namespace string, config *operator.AgentSandbox) error {
+func (a *actuator) reconcile(ctx context.Context, cluster *extensions.Cluster, namespace string, config *api.AgentSandbox) error {
 	// Deploy shoot-components chart first
 	shootComponentsResources, err := a.getShootComponentsResources(cluster, config)
 	if err != nil {
@@ -94,7 +93,7 @@ func (a *actuator) reconcile(ctx context.Context, cluster *extensions.Cluster, n
 	return nil
 }
 
-func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Extension) (*operator.AgentSandbox, error) {
+func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Extension) (*api.AgentSandbox, error) {
 	config := &api.AgentSandbox{}
 	if ex.Spec.ProviderConfig != nil {
 		_, _, err := decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, config)
@@ -106,7 +105,7 @@ func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Ex
 	return config, nil
 }
 
-func (a *actuator) getShootResources(cluster *controller.Cluster, config *operator.AgentSandbox) (map[string][]byte, error) {
+func (a *actuator) getShootResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
 	renderedChart, err := RenderAgentSandboxChart(cluster, config)
 	if err != nil {
 		return nil, err
@@ -119,7 +118,7 @@ func (a *actuator) getShootResources(cluster *controller.Cluster, config *operat
 	return data, nil
 }
 
-func (a *actuator) getShootComponentsResources(cluster *controller.Cluster, config *operator.AgentSandbox) (map[string][]byte, error) {
+func (a *actuator) getShootComponentsResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
 	renderedChart, err := RenderShootComponentsChart(cluster, config)
 	if err != nil {
 		return nil, err
