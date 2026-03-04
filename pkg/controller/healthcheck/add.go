@@ -42,12 +42,12 @@ func RegisterHealthChecks(_ context.Context, mgr manager.Manager, opts healthche
 		nil,
 		[]healthcheck.ConditionTypeToHealthCheck{
 			{
-				ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
-				HealthCheck:   general.CheckManagedResource(lifecycle.SeedResourcesName),
+				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
+				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesShootComponents),
 			},
 			{
-				ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
-				HealthCheck:   general.CheckManagedResource(lifecycle.SeedResourcesName),
+				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
+				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesAgentSandbox),
 			},
 		},
 		sets.New[gardencorev1beta1.ConditionType](),

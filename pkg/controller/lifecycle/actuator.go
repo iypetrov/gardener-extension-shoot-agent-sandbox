@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/charts"
-	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/agentsandbox"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
 	api "github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
@@ -72,6 +71,17 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 }
 
 func (a *actuator) reconcile(ctx context.Context, cluster *extensions.Cluster, namespace string, config *operator.AgentSandbox) error {
+	// Deploy shoot-components chart first
+	shootComponentsResources, err := a.getShootComponentsResources(cluster, config)
+	if err != nil {
+		return err
+	}
+
+	if err := managedresources.CreateForSeed(ctx, a.client, namespace, constants.ManagedResourceNamesShootComponents, false, shootComponentsResources); err != nil {
+		return err
+	}
+
+	// Deploy agent-sandbox chart
 	shootResources, err := a.getShootResources(cluster, config)
 	if err != nil {
 		return err
@@ -97,13 +107,26 @@ func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Ex
 }
 
 func (a *actuator) getShootResources(cluster *controller.Cluster, config *operator.AgentSandbox) (map[string][]byte, error) {
-	renderedChart, err := agentsandbox.RenderAgentSandboxChart(cluster, config)
+	renderedChart, err := RenderAgentSandboxChart(cluster, config)
 	if err != nil {
 		return nil, err
 	}
 
 	data := map[string][]byte{
 		"agent-sandbox.yaml": renderedChart.Manifest(),
+	}
+
+	return data, nil
+}
+
+func (a *actuator) getShootComponentsResources(cluster *controller.Cluster, config *operator.AgentSandbox) (map[string][]byte, error) {
+	renderedChart, err := RenderShootComponentsChart(cluster, config)
+	if err != nil {
+		return nil, err
+	}
+
+	data := map[string][]byte{
+		"shoot-components.yaml": renderedChart.Manifest(),
 	}
 
 	return data, nil
@@ -134,8 +157,15 @@ func (a *actuator) ForceDelete(ctx context.Context, log logr.Logger, ex *extensi
 }
 
 func (a *actuator) deleteShootResources(ctx context.Context, log logr.Logger, namespace string, forceDelete bool) error {
-	log.Info("Deleting managed resource for shoot", "namespace", namespace)
+	log.Info("Deleting managed resources for shoot", "namespace", namespace)
+
+	// Delete agent-sandbox managed resource first
 	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesAgentSandbox); err != nil {
+		return err
+	}
+
+	// Delete shoot-components managed resource
+	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShootComponents); err != nil {
 		return err
 	}
 
@@ -147,7 +177,14 @@ func (a *actuator) deleteShootResources(ctx context.Context, log logr.Logger, na
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
+
+	// Wait for agent-sandbox to be deleted
 	if err := managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, constants.ManagedResourceNamesAgentSandbox); err != nil {
+		return err
+	}
+
+	// Wait for shoot-components to be deleted
+	if err := managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, constants.ManagedResourceNamesShootComponents); err != nil {
 		return err
 	}
 
@@ -163,6 +200,10 @@ func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv
 func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	// Keep objects for shoot managed resources so that they are not deleted from the shoot during the migration
 	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesAgentSandbox, true); err != nil {
+		return err
+	}
+
+	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesShootComponents, true); err != nil {
 		return err
 	}
 
@@ -184,6 +225,21 @@ func RenderAgentSandboxChart(cluster *controller.Cluster, values any) (*chartren
 	renderedChart, err := renderer.RenderEmbeddedFS(charts.Internal, agentSandboxChartPath, constants.ReleaseAgentSandbox, constants.NamespaceAgentSandbox, values)
 	if err != nil {
 		return nil, fmt.Errorf("could not render agent-sandbox chart: %w", err)
+	}
+
+	return renderedChart, nil
+}
+
+// RenderShootComponentsChart renders the shoot-components chart with the provided configuration.
+func RenderShootComponentsChart(cluster *controller.Cluster, values any) (*chartrenderer.RenderedChart, error) {
+	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
+	if err != nil {
+		return nil, fmt.Errorf("could not create chart renderer: %w", err)
+	}
+
+	renderedChart, err := renderer.RenderEmbeddedFS(charts.Internal, shootComponentsChartPath, constants.ReleaseShootComponents, constants.NamespaceKubeSystem, values)
+	if err != nil {
+		return nil, fmt.Errorf("could not render shoot-components chart: %w", err)
 	}
 
 	return renderedChart, nil

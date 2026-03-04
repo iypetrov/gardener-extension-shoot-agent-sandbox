@@ -43,4 +43,9 @@ const (
 	ReleaseAgentSandbox = "agent-sandbox"
 	// ManagedResourceNamesAgentSandbox is the name for the managed resource for the agent-sandbox controller
 	ManagedResourceNamesAgentSandbox = "agent-sandbox"
+	// ManagedResourceNamesShootComponents is the name for the managed resource for the shoot-components
+	ManagedResourceNamesShootComponents = "agent-sandbox-shoot-components"
+
+	// ReleaseShootComponents is the release name for the shoot-components
+	ReleaseShootComponents = "agent-sandbox-shoot-components"
 )
