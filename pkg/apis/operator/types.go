@@ -14,7 +14,12 @@ import (
 type AgentSandbox struct {
 	metav1.TypeMeta
 
-	// EnableExtensions enables extension CRDs (SandboxClaim, SandboxTemplate, SandboxWarmPool) and their RBAC
-	// +optional
-	EnableExtensions *bool
+	// Extensions contains the configuration for the agent-sandbox controller extensions.
+	Extensions *Extensions
+}
+
+// Extensions contains the configuration for the agent-sandbox controller extensions.
+type Extensions struct {
+	// Enable indicates whether the agent-sandbox controller extensions should be enabled or not.
+	Enable bool
 }

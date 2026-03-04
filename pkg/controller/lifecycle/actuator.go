@@ -8,11 +8,14 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
+	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/chartrenderer"
 	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
@@ -22,10 +25,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/gardener-extension-shoot-agent-sandbox/charts"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/agentsandbox"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
-	v1alpha1 "github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator/v1alpha1"
+	api "github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/operator"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/constants"
 )
 
@@ -55,13 +59,13 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("unable to fetch cluster resource: %w", err)
 	}
 
-	config, err := extractAgentSandboxConfig(a.decoder, ex)
-	if err != nil {
-		return fmt.Errorf("unable to extract/decode agent-sandbox config: %w", err)
-	}
-
 	if controller.IsHibernated(cluster) {
 		return nil
+	}
+
+	config, err := decodeAgentSandboxConfig(a.decoder, ex)
+	if err != nil {
+		return fmt.Errorf("unable to extract/decode agent-sandbox config: %w", err)
 	}
 
 	return a.reconcile(ctx, cluster, namespace, config)
@@ -80,21 +84,16 @@ func (a *actuator) reconcile(ctx context.Context, cluster *extensions.Cluster, n
 	return nil
 }
 
-func extractAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Extension) (*operator.AgentSandbox, error) {
-	config := &v1alpha1.AgentSandbox{}
+func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Extension) (*operator.AgentSandbox, error) {
+	config := &api.AgentSandbox{}
 	if ex.Spec.ProviderConfig != nil {
 		_, _, err := decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, config)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode provider config: %w", err)
 		}
 	}
 
-	// Convert v1alpha1 to internal type
-	internalConfig := &operator.AgentSandbox{
-		EnableExtensions: config.EnableExtensions,
-	}
-
-	return internalConfig, nil
+	return config, nil
 }
 
 func (a *actuator) getShootResources(cluster *controller.Cluster, config *operator.AgentSandbox) (map[string][]byte, error) {
@@ -168,4 +167,24 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	}
 
 	return a.Delete(ctx, log, ex)
+}
+
+var (
+	agentSandboxChartPath    = filepath.Join(charts.ChartsPath, charts.AgentSandboxChartPath)
+	shootComponentsChartPath = filepath.Join(charts.ChartsPath, charts.ShootComponentsChartPath)
+)
+
+// RenderAgentSandboxChart renders the agent-sandbox chart with the provided configuration.
+func RenderAgentSandboxChart(cluster *controller.Cluster, values any) (*chartrenderer.RenderedChart, error) {
+	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
+	if err != nil {
+		return nil, fmt.Errorf("could not create chart renderer: %w", err)
+	}
+
+	renderedChart, err := renderer.RenderEmbeddedFS(charts.Internal, agentSandboxChartPath, constants.ReleaseAgentSandbox, constants.NamespaceAgentSandbox, values)
+	if err != nil {
+		return nil, fmt.Errorf("could not render agent-sandbox chart: %w", err)
+	}
+
+	return renderedChart, nil
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
+	extensionshealthcheck "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/apis/config/v1alpha1"
+	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-agent-sandbox/pkg/controller/lifecycle"
 )
 
@@ -87,6 +89,7 @@ func (c *AgentSandboxConfig) ApplyAgentSandboxConfig(config *config.Configuratio
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
 		cmd.Switch(lifecycle.Name, lifecycle.AddToManager),
+		cmd.Switch(extensionshealthcheck.ControllerName, healthcheck.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
 	)
 }

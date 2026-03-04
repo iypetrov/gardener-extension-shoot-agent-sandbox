@@ -20,7 +20,9 @@ func SetDefaults_AgentSandbox(obj *AgentSandbox) {
 	}
 
 	// Default EnableExtensions to true
-	if obj.EnableExtensions == nil {
-		obj.EnableExtensions = ptr.To(true)
+	if obj.Extensions == nil {
+		obj.Extensions = ptr.To(Extensions{
+			Enable: true,
+		})
 	}
 }

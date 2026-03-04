@@ -44,14 +44,46 @@ string
 </tr>
 <tr>
 <td>
-<code>enableExtensions</code></br>
+<code>extensions</code></br>
+<em>
+<a href="#agent-sandbox.extensions.gardener.cloud/v1alpha1.Extensions">
+Extensions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Extensions contains the configuration for the agent-sandbox controller extensions.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="agent-sandbox.extensions.gardener.cloud/v1alpha1.Extensions">Extensions
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#agent-sandbox.extensions.gardener.cloud/v1alpha1.AgentSandbox">AgentSandbox</a>)
+</p>
+<p>
+<p>Extensions contains the configuration for the agent-sandbox controller extensions.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enable</code></br>
 <em>
 bool
 </em>
 </td>
 <td>
-<em>(Optional)</em>
-<p>EnableExtensions enables extension CRDs (SandboxClaim, SandboxTemplate, SandboxWarmPool) and their RBAC</p>
+<p>Enable indicates whether the agent-sandbox controller extensions should be enabled or not.</p>
 </td>
 </tr>
 </tbody>
