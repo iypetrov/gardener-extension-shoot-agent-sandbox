@@ -73,22 +73,11 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 
 func (a *actuator) reconcile(ctx context.Context, cluster *extensions.Cluster, namespace string, config *api.AgentSandbox) error {
 	// Deploy shoot-components chart first
-	shootComponentsResources, err := a.getShootComponentsResources(cluster, config)
-	if err != nil {
-		return err
-	}
-
-	if err := managedresources.CreateForSeed(ctx, a.client, namespace, constants.ManagedResourceNamesShootComponents, false, shootComponentsResources); err != nil {
-		return err
-	}
-
-	// Deploy agent-sandbox chart
 	shootResources, err := a.getShootResources(cluster, config)
 	if err != nil {
 		return err
 	}
-
-	if err := managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesAgentSandbox, constants.ExtensionName, false, shootResources); err != nil {
+	if err := managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShootComponents, constants.ExtensionName, false, shootResources); err != nil {
 		return err
 	}
 
@@ -107,7 +96,7 @@ func decodeAgentSandboxConfig(decoder runtime.Decoder, ex *extensionsv1alpha1.Ex
 	return config, nil
 }
 
-func (a *actuator) getShootResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
+func (a *actuator) getSeedResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
 	values := map[string]any{}
 
 	// Merge extension config values if present
@@ -120,7 +109,7 @@ func (a *actuator) getShootResources(cluster *controller.Cluster, config *api.Ag
 		return nil, fmt.Errorf("could not inject images: %w", err)
 	}
 
-	renderedChart, err := RenderAgentSandboxChart(cluster, values)
+	renderedChart, err := renderAgentSandboxControllerChart(cluster, values)
 	if err != nil {
 		return nil, err
 	}
@@ -132,8 +121,8 @@ func (a *actuator) getShootResources(cluster *controller.Cluster, config *api.Ag
 	return data, nil
 }
 
-func (a *actuator) getShootComponentsResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
-	renderedChart, err := RenderShootComponentsChart(cluster, config)
+func (a *actuator) getShootResources(cluster *controller.Cluster, config *api.AgentSandbox) (map[string][]byte, error) {
+	renderedChart, err := renderShootComponentsChart(cluster, config)
 	if err != nil {
 		return nil, err
 	}
@@ -172,11 +161,6 @@ func (a *actuator) ForceDelete(ctx context.Context, log logr.Logger, ex *extensi
 func (a *actuator) deleteShootResources(ctx context.Context, log logr.Logger, namespace string, forceDelete bool) error {
 	log.Info("Deleting managed resources for shoot", "namespace", namespace)
 
-	// Delete agent-sandbox managed resource first
-	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesAgentSandbox); err != nil {
-		return err
-	}
-
 	// Delete shoot-components managed resource
 	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShootComponents); err != nil {
 		return err
@@ -192,11 +176,6 @@ func (a *actuator) deleteShootResources(ctx context.Context, log logr.Logger, na
 	defer cancel()
 
 	// Wait for agent-sandbox to be deleted
-	if err := managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, constants.ManagedResourceNamesAgentSandbox); err != nil {
-		return err
-	}
-
-	// Wait for shoot-components to be deleted
 	if err := managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, constants.ManagedResourceNamesShootComponents); err != nil {
 		return err
 	}
@@ -211,11 +190,6 @@ func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv
 
 // Migrate the Extension resource.
 func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
-	// Keep objects for shoot managed resources so that they are not deleted from the shoot during the migration
-	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesAgentSandbox, true); err != nil {
-		return err
-	}
-
 	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesShootComponents, true); err != nil {
 		return err
 	}
@@ -228,8 +202,8 @@ var (
 	shootComponentsChartPath = filepath.Join(charts.ChartsPath, charts.ShootComponentsChartPath)
 )
 
-// RenderAgentSandboxChart renders the agent-sandbox chart with the provided configuration.
-func RenderAgentSandboxChart(cluster *controller.Cluster, values any) (*chartrenderer.RenderedChart, error) {
+// renderAgentSandboxControllerChart renders the agent-sandbox chart with the provided configuration.
+func renderAgentSandboxControllerChart(cluster *controller.Cluster, values any) (*chartrenderer.RenderedChart, error) {
 	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
 	if err != nil {
 		return nil, fmt.Errorf("could not create chart renderer: %w", err)
@@ -243,14 +217,14 @@ func RenderAgentSandboxChart(cluster *controller.Cluster, values any) (*chartren
 	return renderedChart, nil
 }
 
-// RenderShootComponentsChart renders the shoot-components chart with the provided configuration.
-func RenderShootComponentsChart(cluster *controller.Cluster, values any) (*chartrenderer.RenderedChart, error) {
+// renderShootComponentsChart renders the shoot-components chart with the provided configuration.
+func renderShootComponentsChart(cluster *controller.Cluster, values any) (*chartrenderer.RenderedChart, error) {
 	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
 	if err != nil {
 		return nil, fmt.Errorf("could not create chart renderer: %w", err)
 	}
 
-	renderedChart, err := renderer.RenderEmbeddedFS(charts.Internal, shootComponentsChartPath, constants.ReleaseShootComponents, constants.NamespaceKubeSystem, values)
+	renderedChart, err := renderer.RenderEmbeddedFS(charts.Internal, shootComponentsChartPath, constants.ReleaseShootComponents, constants.NamespaceAgentSandbox, values)
 	if err != nil {
 		return nil, fmt.Errorf("could not render shoot-components chart: %w", err)
 	}
