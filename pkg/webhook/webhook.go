@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -50,6 +52,9 @@ func AddToManager(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Target:   extensionswebhook.TargetSeed,
 		Webhook:  &admission.Webhook{Handler: handler},
 		Types:    objTypes,
+		NamespaceSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{v1beta1constants.LabelExtensionPrefix + constants.ExtensionType: "true"},
+		},
 	}
 
 	return webhook, nil
