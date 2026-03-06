@@ -46,6 +46,7 @@ func NewOptions() *Options {
 		constants.ServiceName,
 		"",
 		nil,
+		nil,
 		webhookServerOptions,
 		webhookSwitches,
 	)
