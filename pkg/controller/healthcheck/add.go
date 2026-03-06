@@ -45,10 +45,6 @@ func RegisterHealthChecks(_ context.Context, mgr manager.Manager, opts healthche
 				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
 				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesShootComponents),
 			},
-			{
-				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
-				HealthCheck:   general.CheckManagedResource(constants.ManagedResourceNamesAgentSandbox),
-			},
 		},
 		sets.New[gardencorev1beta1.ConditionType](),
 	)
