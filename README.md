@@ -4,6 +4,8 @@
 [![Build](https://github.com/gardener/gardener-extension-shoot-agent-sandbox/actions/workflows/non-release.yaml/badge.svg)](https://github.com/gardener/gardener-extension-shoot-agent-sandbox/actions/workflows/non-release.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gardener/gardener-extension-shoot-agent-sandbox)](https://goreportcard.com/report/github.com/gardener/gardener-extension-shoot-agent-sandbox)
 
+⚠️ This extension is still in alpha state. 
+
 Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service. Its main principle is to leverage Kubernetes concepts for all of its tasks.
 
 This repository contains a Gardener extension to automatically deploy agent sandbox controller into Shoot clusters. It implements Gardener's extension contract for the `shoot-agent-sandbox` extension. If you want to know what a Gardener extension is, have a look at [GEP-1](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md).
