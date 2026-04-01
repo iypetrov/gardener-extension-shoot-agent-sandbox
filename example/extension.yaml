@@ -9,7 +9,7 @@ spec:
     extension:
       helm:
         ociRepository:
-          ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/shoot-agent-sandbox:v0.2.1
+          ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/shoot-agent-sandbox:v0.3.0-dev
   resources:
   - kind: Extension
     type: shoot-agent-sandbox
